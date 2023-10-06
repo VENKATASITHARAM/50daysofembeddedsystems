@@ -1,0 +1,36 @@
+// SITHARAM  
+
+#define white 3
+#define blue  4
+#define green 5
+#define red   6
+
+void setup()
+{
+  pinMode(white, OUTPUT);
+  pinMode(blue , OUTPUT);
+  pinMode(green, OUTPUT);
+  pinMode(red  , OUTPUT);  
+}
+
+void loop()
+{
+  digitalWrite(white,HIGH);
+  delay(1000); // Wait for 1000 millisecond(s)
+  digitalWrite(blue ,HIGH);
+  delay(1000); // Wait for 1000 millisecond(s)
+  digitalWrite(green,HIGH);
+  delay(1000); // Wait for 1000 millisecond(s)
+  digitalWrite(red ,HIGH);
+  delay(1000); // Wait for 1000 millisecond(s)
+  
+  
+  digitalWrite(white,LOW);
+  delay(1000); // Wait for 1000 millisecond(s)
+  digitalWrite(blue ,LOW);
+  delay(1000); // Wait for 1000 millisecond(s)
+  digitalWrite(green,LOW);
+  delay(1000); // Wait for 1000 millisecond(s)
+  digitalWrite(red ,LOW);
+  delay(1000); // Wait for 1000 millisecond(s)
+}
