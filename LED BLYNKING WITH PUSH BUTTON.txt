@@ -1,0 +1,36 @@
+//LED BLYNKING WITH PUSH BUTTON
+//SITHARAM
+int status = 0;
+
+void setup()
+{
+  pinMode(2, INPUT);
+  pinMode(3, INPUT);
+  pinMode(12, OUTPUT);
+  pinMode(13, OUTPUT);
+}
+
+void loop()
+{
+  status = digitalRead(2); // ler estadobotao
+  
+  if(status == HIGH)
+  {
+    digitalWrite(13, HIGH);
+  } else {
+    digitalWrite(13, LOW);
+  }
+  
+  delay(15); //somente para melhorar a simulação
+  
+  status = digitalRead(3); // ler estadobotao
+  
+  if(status == HIGH)
+  {
+    digitalWrite(12, HIGH);
+  } else {
+    digitalWrite(12, LOW);
+  }
+  
+  delay(15); //somente para melhorar a simulação
+}
