@@ -1,0 +1,36 @@
+//SMART DUSTBIN
+//SITHARAM
+
+#include<Servo.h>
+int echo=5;
+int trig=4;
+float distance,duration;
+Servo myServo;//alias name
+void setup()
+{
+  myServo.attach(3);
+  pinMode(echo,INPUT);
+  pinMode(trig,OUTPUT);
+  Serial.begin(9600);
+}
+void loop()
+{
+  digitalWrite(trig,LOW); //send signal
+  delayMicroseconds(2);
+  digitalWrite(trig,HIGH);
+  delay(10);
+  digitalWrite(trig,LOW);
+  
+  duration=pulseIn( echo,HIGH);//receive signal
+  myServo.write(0);//close
+  distance=duration*(0.0343/2);//converting to distance
+  
+  if(distance <= 100)
+  {
+    myServo.write(90);//dust-bin open
+  }
+  else
+  {
+    myServo.write(0);//close
+  }
+}
