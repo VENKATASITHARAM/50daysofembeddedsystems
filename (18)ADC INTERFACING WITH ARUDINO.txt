@@ -1,0 +1,34 @@
+//(18)ADC INTERFACING WITH ARUDINO
+// SITHARAM
+
+#include <LiquidCrystal.h>
+LiquidCrystal lcd(13, 12, 11, 10, 9, 8);
+#define led 6
+int sensorPin = A0;         // Select the input pin for the potentiometer
+int digitalValue = 0;       // Variable to store the value coming from the sensor
+float analogVoltage = 0.00; // Variable to store the calculated analog voltage
+void setup() {
+  Serial.begin(9600);
+  lcd.begin(16, 2);  // Initialize LCD: 16 columns, 2 rows
+  lcd.clear();
+  pinMode(7, OUTPUT);
+  pinMode(led,OUTPUT);
+}
+void loop() {
+  // Read the value from the analog channel
+  digitalValue = analogRead(sensorPin);
+  // Print digital value on the serial monitor
+  Serial.print("Digital value = ");
+  Serial.print(digitalValue);
+  analogVoltage = (digitalValue * 1023.0) / 1023.0;  // Convert digital value to analog voltage
+  if(digitalValue==0)
+  {
+    analogVoltage=0.00;
+  }
+  lcd.setCursor(0, 0);
+  lcd.print("Analog Voltage:");
+  lcd.setCursor(0, 1);
+  lcd.print(analogVoltage, 2);  // // Display analog voltage on the LCD screen,with 2 decimal places
+
+  delay(1000);  // Wait for 1 second before the next reading
+}
