@@ -1,0 +1,48 @@
+//(21)UART_SLAVE
+//SITHARAM
+
+int LED13 = 13;
+int LED12 = 12;
+int LED11 = 11;
+int receive = 0;
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  pinMode(LED13, OUTPUT);
+  pinMode(LED12, OUTPUT);
+  pinMode(LED11, OUTPUT);
+
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  if(Serial.available())
+  {
+    receive = Serial.read();
+    if(receive == 13)
+    {
+      digitalWrite(LED13, 1);
+      digitalWrite(LED12, 0);
+      digitalWrite(LED11, 0);  
+    }
+    else if(receive == 12)
+    {
+      digitalWrite(LED13, 0);
+      digitalWrite(LED12, 1);
+      digitalWrite(LED11, 0);
+    }
+    else if(receive == 11)
+    {
+      digitalWrite(LED13, 0);
+      digitalWrite(LED12, 0);
+      digitalWrite(LED11, 1);
+    }
+    else 
+    {
+      digitalWrite(LED13, 0);
+      digitalWrite(LED12, 0);
+      digitalWrite(LED11, 0);
+    }
+  }
+
+}

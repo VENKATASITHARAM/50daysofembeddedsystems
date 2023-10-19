@@ -1,0 +1,37 @@
+//(21)UART_MASTER
+//SITHARAM
+
+int Button13 = 13;
+int Button12 = 12;
+int Button11 = 11;
+int Button10 = 10;
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  pinMode(Button13, INPUT_PULLUP);
+  pinMode(Button12, INPUT_PULLUP);
+  pinMode(Button11, INPUT_PULLUP);
+  pinMode(Button10, INPUT_PULLUP);
+
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  if(digitalRead(Button13)== 0)//if button press
+  {
+    Serial.write(13);
+  }
+  else if(digitalRead(Button12)== 0)
+  {
+    Serial.write(12);
+  }
+  else if(digitalRead(Button11)== 0)
+  {
+    Serial.write(11);
+  }
+  else if(digitalRead(Button10)== 0)
+  {
+    Serial.write(10);
+  }
+}
