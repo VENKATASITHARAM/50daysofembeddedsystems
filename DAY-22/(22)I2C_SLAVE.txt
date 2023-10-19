@@ -1,0 +1,30 @@
+//(22)I2C_SLAVE
+//SITHARAM
+
+#include <Wire.h>
+int LED = 13;
+void setup()
+{
+  pinMode (LED, OUTPUT);
+  Wire.begin(6);                // join i2c bus with address #6
+  Wire.onReceive(receiveEvent); // register event
+  Serial.begin(9600);           // start serial for output
+}
+void loop()
+{
+  delay(100);
+}
+void receiveEvent(int howMany)
+{
+  while(1 < Wire.available()) // loop through all but the last
+  {
+    char c = Wire.read(); // receive byte as a character
+    Serial.print(c);
+    digitalWrite(LED, HIGH);
+    delay(1000);
+    digitalWrite(LED, LOW);
+    delay(500);// print the character
+  }
+  int x = Wire.read();    // receive byte as an integer
+  Serial.println(x);         // print the integer
+}

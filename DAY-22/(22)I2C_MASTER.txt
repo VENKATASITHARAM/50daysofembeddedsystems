@@ -1,0 +1,19 @@
+//(22)I2C_MASTER
+//SITHARAM
+
+#include <Wire.h>
+int LED = 13; // Initialize pin 13 to drive LED
+void setup()
+{
+  Wire.begin(); // join i2c bus (address optional for master)
+}
+byte x = 0;
+void loop()
+{
+  Wire.beginTransmission(6); // transmit to device #6
+  Wire.write("x is ");        // sends five bytes
+  Wire.write(x);              // sends one byte 
+  Wire.endTransmission();    // stop transmitting
+  x++;
+  delay(500);
+}
