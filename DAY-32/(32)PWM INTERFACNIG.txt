@@ -1,0 +1,76 @@
+//(32)PWM INTERFACNIG
+
+// 'C' source line config statements
+
+// CONFIG
+#pragma config FOSC = EXTRC     // Oscillator Selection bits (RC oscillator)
+#pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled)
+#pragma config PWRTE = OFF      // Power-up Timer Enable bit (PWRT disabled)
+#pragma config BOREN = OFF      // Brown-out Reset Enable bit (BOR disabled)
+#pragma config LVP = OFF         // Low-Voltage (Single-Supply) In-Circuit Serial Programming Enable bit (RB3/PGM pin has PGM function; low-voltage programming enabled)
+#pragma config CPD = OFF        // Data EEPROM Memory Code Protection bit (Data EEPROM code protection off)
+#pragma config WRT = OFF        // Flash Program Memory Write Enable bits (Write protection off; all program memory may be written to by EECON control)
+#pragma config CP = OFF         // Flash Program Memory Code Protection bit (Code protection off)
+
+// #pragma config statements should precede project file includes.
+// Use project enums instead of #define for ON and OFF.
+/*
+1.Clock frequency= 6Mhz
+2.pwm frequency = 2khz
+3.generate duty cycle for 20% and 60% and 90% for 3 second delay interval 
+4.prescalar value 16
+ */
+#include <xc.h>
+#define _XTAL_FREQ 6000000
+
+void init(void);
+void pwm_change(void);
+
+unsigned char pwmhigh20,pwmlow20;
+unsigned char pwmhigh60,pwmlow60;
+unsigned char pwmhigh90,pwmlow90;
+void main()
+{
+    init();
+    while(1)
+    {
+        pwm_change();//repeat the code until simulation stops
+    }
+}
+void pwm_change()
+{
+    CCPR1L=pwmhigh20;//assigning the value of 20%DUTY CYCLE
+    CCP1CON=(CCP1CON & 0XCF)|(pwmlow20);
+    __delay_ms(3000);
+    /* Initially CCP1CON is specifing the PWM mode(0011 0000) so we must not disturb those bits and do our changes
+     FIRST clear the PWM enable pins by & operation and then or operation with low value */
+    
+    CCPR1L=pwmhigh60;//assigning the value of 60%DUTY CYCLE
+    CCP1CON=(CCP1CON & 0XCF)|(pwmlow60);
+    __delay_ms(3000);
+    
+    CCPR1L=pwmhigh90;//assigning the value of 90%DUTY CYCLE
+    CCP1CON=(CCP1CON & 0XCF)|(pwmlow90);
+    __delay_ms(3000);
+}
+void init()
+{
+    TRISC=0XFB;      //1111 1011 RC2 AS O/P.
+    CCP1CON=0X0C;   //These bits are the two LSbs of the PWM duty cycle. (--00 11xx)PWM MODE.
+                    //WE WILL USE THIS FOR STORING LSB'S OF PWM DUTY CYCLE&PWM MODE
+    T2CON=0X06;     //0000 0110   1,0bits (1x --> preScalar=16)    2bit-TIMER2ON
+    PR2=0X2E;       //0010 1111 PERIOD--> PR2=Fosc/(4*Fpwm*TMR2 PRE-SCALAR)-->6MHz/(4*2KHz*16) =46 = 0X2E
+    
+    //DUTY_CYCLE VALUE=((duty cycle/Fpwm) * (Fosc /pre-scalar)) 
+    
+    //DUTY CYCLE VALUE 20%--> (0.2/2000)*(6000000/16)=(0.0001)*(375000) =38     =0X26   0010 0110
+    //DUTY CYCLE VALUE 60%--> (0.6/2000)*(6000000/16)=(0.0003)*(375000) =113    =0X71   0111 0001
+    //DUTY CYCLE VALUE 90%--> (0.9/2000)*(6000000/16)=(0.00045)*(375000)=169    =0XA9   1010 1001
+    
+    pwmhigh20=0X09;   // HIGH=0000 1001-->0X09
+    pwmlow20=0X20;   //LOW=0010 0000-->0X20
+    pwmhigh60=0X1C;//HIGH=0001 1100-->0X1C
+    pwmlow60=0X10;  //LOW=0001 0000-->0X10
+    pwmhigh90=0X2A;//HIGH=0010 1010-->2A
+    pwmlow90=0X10;  //LOW=0001 0000-->10
+}

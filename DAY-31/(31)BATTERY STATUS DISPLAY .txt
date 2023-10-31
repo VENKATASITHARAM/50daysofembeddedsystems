@@ -1,0 +1,194 @@
+//(31)BATTERY STATUS DISPLAY 
+
+#pragma config FOSC = EXTRC     // Oscillator Selection bits (RC oscillator)
+#pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled)
+#pragma config PWRTE = OFF      // Power-up Timer Enable bit (PWRT disabled)
+#pragma config BOREN = OFF      // Brown-out Reset Enable bit (BOR disabled)
+#pragma config LVP = OFF        // Low-Voltage (Single-Supply) In-Circuit Serial Programming Enable bit (RB3 is digital I/O, HV on MCLR must be used for programming)
+#pragma config CPD = OFF        // Data EEPROM Memory Code Protection bit (Data EEPROM code protection off)
+#pragma config WRT = OFF        // Flash Program Memory Write Enable bits (Write protection off; all program memory may be written to by EECON control)
+#pragma config CP = OFF         // Flash Program Memory Code Protection bit (Code protection off)
+
+// #pragma config statements should precede project file includes.
+// Use project enums instead of #define for ON and OFF.
+
+//0 1 2 3 4 5 6 7 8 9 A B C D E F 
+//B A T T   V O L T :   1 5 . 5
+//B A T T   L O W                      
+//RB4- BEGIN  RB5-INC RB6-DEC  RB7-RESET
+
+#include <xc.h>
+#define _XTAL_FREQ 6000000
+
+void Lcd_init(void);
+void Lcd_Command(unsigned char);
+void KeyPress(void);
+void Lcd_Data(unsigned char);
+void Lcd_Display(void);
+void Lcd_Digit(unsigned int);
+void Lcd_Increment(void);
+void Lcd_Decrement(void);
+void Lcd_Reset(void);
+
+unsigned char   str[]="BATT VOLT: ";
+unsigned char line1[]="BATT LOW   ";
+unsigned char line2[]="BATT NORMAL";
+unsigned char line3[]="BATT HIGH  ";
+unsigned int i,j;
+unsigned char d3,d2,d1;
+unsigned char value;
+unsigned char DOT='.';
+
+void main()
+{
+    Lcd_init();
+    while(1)
+        KeyPress();//when switch is pressed.
+}
+
+void KeyPress()
+{
+    PORTB&=0XF0;
+    value=PORTB;
+    switch(value)
+    {
+        case 0XE0://when RB4 PRESSED
+            Lcd_Display();
+            break;
+        case 0XD0://when RB5 PRESSED
+            Lcd_Increment();
+            break;
+        case 0XB0://when RB6 PRESSED
+            Lcd_Decrement();
+            break;
+        case 0X70://when RB7 PRESSED
+            Lcd_Reset();
+            break;
+    }
+}
+
+void Lcd_Reset()//to reset
+{
+    j=155;//reset with 15.5
+    
+    Lcd_Digit(j);
+    
+    Lcd_Command(0XC0);//To force lcd to 2nd line.
+    for(i=0;i<=11;i++)
+        Lcd_Data(line1[i]);
+}
+
+void Lcd_Decrement()//to decrement the value
+{
+    j--;
+    
+    if(j<=155)
+        j=155;
+    
+    Lcd_Digit(j);
+    
+    Lcd_Command(0XC0);//cursor force to 2nd line.
+    if(j>=155 && j<=160) 
+    {
+        for(i=0;i<=11;i++)
+            Lcd_Data(line1[i]);//batt low
+    }
+    else if(j>=161 && j<=165)
+    {
+        for(i=0;i<=11;i++)
+            Lcd_Data(line2[i]);//batt normal
+    }
+    else
+    {
+        for(i=0;i<=11;i++)
+            Lcd_Data(line3[i]);//batt high
+    }
+}
+void Lcd_Increment()//to increment the value.
+{
+    j++;
+    
+    if(j>=170)//value wont go more than 17.0
+        j=170;
+   
+    Lcd_Digit(j);
+    
+    Lcd_Command(0XC0);//cursor force to 2nd line.
+    if(j>=155 && j<=160)
+    {
+        for(i=0;i<=11;i++)
+            Lcd_Data(line1[i]);//batt low
+    }
+    else if(j>=161 && j<=165)
+    {
+        for(i=0;i<=11;i++)
+            Lcd_Data(line2[i]);//batt normal
+    }
+    else
+    {
+        for(i=0;i<=11;i++)
+            Lcd_Data(line3[i]);//batt high
+    }
+}
+
+void Lcd_Display()//display the initial value with 15.5
+{
+    Lcd_Command(0X80);
+    for(i=0;i<=10;i++)
+        Lcd_Data(str[i]);
+    
+    Lcd_Digit(j);//display the battery level
+    
+    Lcd_Command(0XC0);
+    for(i=0;i<=11;i++)
+        Lcd_Data(line1[i]);
+}
+
+void Lcd_Digit(unsigned int num)
+{
+    d3=(unsigned char)(num/100);
+    d2=(unsigned char)((num-(d3*100))/10);
+    d1=(unsigned char) (num-(d3*100)-(d2*10));
+    Lcd_Command(0X8B);
+    Lcd_Data(0X30+d3);//digit1
+    Lcd_Data(0X30+d2);//digit2
+    Lcd_Data(DOT);    //dot
+    Lcd_Data(0X30+d1);//after digit3
+}
+
+void Lcd_Command(unsigned char comm)
+{
+    PORTC&=~0X08;
+    PORTD=comm;
+    PORTC|=0X01;
+    PORTC&=~0X01;
+    __delay_ms(100);        
+}
+void Lcd_Data(unsigned char d)
+{
+    PORTC|=0X08;
+    PORTD=d;
+    PORTC|=0X01;
+    PORTC&=~0X01;
+    __delay_ms(100);    
+}
+void Lcd_init()
+{
+    TRISB=0XF0;
+    TRISC=0X00;
+    TRISD=0X00;
+    OPTION_REG&=0X7F;//portb pull up
+    Lcd_Command(0X38);
+    __delay_ms(10);
+    Lcd_Command(0X38);
+    __delay_ms(10);
+    Lcd_Command(0X38);//enable 5x7 matrix 
+    __delay_ms(10);
+    Lcd_Command(0X0C);//enble display cursor off
+    __delay_ms(10);
+    Lcd_Command(0X06);//move from left to right
+    __delay_ms(10);
+    Lcd_Command(0X01);//clear screen
+    __delay_ms(10); 
+    j=155;
+}

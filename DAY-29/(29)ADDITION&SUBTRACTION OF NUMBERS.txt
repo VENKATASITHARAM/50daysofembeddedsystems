@@ -1,0 +1,123 @@
+//(29)ADDITION&SUBTRACTION OF NUMBERS
+
+// 'C' source line config statements
+
+// CONFIG
+#pragma config FOSC = EXTRC     // Oscillator Selection bits (RC oscillator)
+#pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled)
+#pragma config PWRTE = OFF      // Power-up Timer Enable bit (PWRT disabled)
+#pragma config BOREN = OFF      // Brown-out Reset Enable bit (BOR disabled)
+#pragma config LVP = OFF        // Low-Voltage (Single-Supply) In-Circuit Serial Programming Enable bit (RB3 is digital I/O, HV on MCLR must be used for programming)
+#pragma config CPD = OFF        // Data EEPROM Memory Code Protection bit (Data EEPROM code protection off)
+#pragma config WRT = OFF        // Flash Program Memory Write Enable bits (Write protection off; all program memory may be written to by EECON control)
+#pragma config CP = OFF         // Flash Program Memory Code Protection bit (Code protection off)
+
+// #pragma config statements should precede project file includes.
+// Use project enums instead of #define for ON and OFF.
+
+#include <xc.h>
+#define _XTAL_FREQ 6000000
+
+void Lcd_init(void);
+void Lcd_Command(unsigned char);
+void Lcd_Element(unsigned int);
+void Lcd_Data(unsigned char);
+
+unsigned int num2=532;
+unsigned int num1=232;
+unsigned char plus='+';
+unsigned char min='-';
+unsigned char equal='=';
+unsigned char i,j,rem,str[5];
+unsigned int ans,n;
+
+void main()
+{
+    TRISC=0X00;
+    TRISD=0X00;
+    Lcd_init();
+    Lcd_Command(0x80);//1st row position-1
+    __delay_ms(100);
+    Lcd_Element(num1);//num1
+    __delay_ms(100);
+    Lcd_Data(min);   //-
+    __delay_ms(100);
+    Lcd_Element(num2);//num2
+    __delay_ms(200);
+    Lcd_Data(equal);// =
+    __delay_ms(100);
+    
+    if(num1>num2)//if number is greater than zero.
+    {
+        Lcd_Data(plus); //+
+        ans=num1-num2; //answer
+    }
+    else
+    {
+        Lcd_Data(min); // -
+        ans=num2-num1; //answer
+    }
+    Lcd_Element(ans); //for displaying answer to lcd.
+    __delay_ms(1000);
+    
+    Lcd_Command(0X01);//clear screen after subtractio the addition
+    
+    Lcd_Element(num1);
+    Lcd_Data(plus);
+    Lcd_Element(num2);
+    Lcd_Data(equal);
+    ans=num1+num2;
+    Lcd_Data(plus);
+    Lcd_Element(ans);
+    while(1); //display continously
+    
+}
+void Lcd_init()
+{
+    Lcd_Command(0x38);
+    __delay_ms(10);
+    Lcd_Command(0x38);
+    __delay_ms(10);
+    Lcd_Command(0x38);//ENABLE 5X7 MATRIX
+    __delay_ms(10);
+    Lcd_Command(0x06);//FORCE CURSOR TO MOVE FROM LEFT TO RIGHT
+    __delay_ms(10);
+    Lcd_Command(0x0C);//DISPLAY ON CURSOR OFF
+    __delay_ms(10);
+    Lcd_Command(0x01);//CLEAR SCREEN
+    __delay_ms(10);
+}
+void Lcd_Command(unsigned char comm)
+{
+    //make changes to the pin we want without effecting the other pins
+    PORTC&=~0X08;//PORTC = PORTC & 0xF7 --> simplified //RS=0
+    PORTD=comm;
+    PORTC|=0x01;//E=1
+    PORTC&=~0X01;//E=0
+    __delay_ms(10);
+}
+void Lcd_Data(unsigned char out)
+{
+    PORTC|=0x08;//RS=1
+    PORTD=out;
+    PORTC|=0X01;//E=1
+    PORTC&=~0x01;//E=0
+    __delay_ms(10);
+}
+void Lcd_Element(unsigned int num)
+{
+    i=1;
+    while(num!=0)
+    {
+    rem=num%10;//taking individual bit
+    str[i++]=rem;//storing in string
+    num/=10;//making for next num
+    }
+    str[i]='\0';//end of string
+    j=i-1;
+    while(j!=0)
+    {
+        Lcd_Data(0x30+str[j--]);//display the number in reverse string
+        __delay_ms(500);
+    }
+}
