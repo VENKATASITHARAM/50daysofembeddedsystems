@@ -1,0 +1,103 @@
+//ULTRASONIC SENSOR INTEFACING
+
+// PIC16F877A Configuration Bit Settings
+
+// 'C' source line config statements
+
+// CONFIG
+#pragma config FOSC = EXTRC     // Oscillator Selection bits (RC oscillator)
+#pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled)
+#pragma config PWRTE = OFF      // Power-up Timer Enable bit (PWRT disabled)
+#pragma config BOREN = OFF      // Brown-out Reset Enable bit (BOR disabled)
+#pragma config LVP = OFF        // Low-Voltage (Single-Supply) In-Circuit Serial Programming Enable bit (RB3 is digital I/O, HV on MCLR must be used for programming)
+#pragma config CPD = OFF        // Data EEPROM Memory Code Protection bit (Data EEPROM code protection off)
+#pragma config WRT = OFF        // Flash Program Memory Write Enable bits (Write protection off; all program memory may be written to by EECON control)
+#pragma config CP = OFF         // Flash Program Memory Code Protection bit (Code protection off)
+
+// #pragma config statements should precede project file includes.
+// Use project enums instead of #define for ON and OFF.
+
+#include <xc.h>
+#define _XTAL_FREQ 16000000
+#define TRIG RB1
+#define ECHO RB2
+
+void Lcd_init(void);
+void Lcd_Command(unsigned char );
+void Lcd_Data(unsigned char );
+
+unsigned int time_taken,distance;
+unsigned char t1,t2,t3,t4,t5,d1,d2,d3;
+unsigned char dis[]="DISTANCE: ",cm[]="CM";
+void main()
+{
+    TRISB=0X04;// 0000 0100
+    T1CON =0X20;//pre-scalar 
+    TRISD=0X00;
+    TRISC=0X00;
+    
+    Lcd_init();
+    Lcd_Command(0x80);
+    for(int i=0;i<10;i++)
+        Lcd_Data(dis[i]);
+    
+    while(1)
+    { 
+        TMR1H =0; TMR1L =0; //clear the timer bits
+        
+        TRIG = 1; 
+        __delay_us(10);           
+        TRIG  = 0;  
+        
+        while (ECHO==0);
+            T1CON |=0X01;//TIMERON
+        while (ECHO==1);
+            T1CON &= 0XFE;//TIMER0FF
+        time_taken = (TMR1L | (TMR1H<<8)); 
+
+        distance= (0.0272*time_taken)/2;
+        time_taken = time_taken * 0.8;
+        
+        Lcd_Command(0xC8);
+        d1 = (distance/100)%10;
+        d2 = (distance/10)%10;
+        d3 = (distance/1)%10;
+        Lcd_Data(d1+'0');
+        Lcd_Data(d2+'0');
+        Lcd_Data(d3+'0');
+        for(int i=0;i<2;i++)
+            Lcd_Data(cm[i]);
+    }
+}
+void Lcd_init()
+{
+    Lcd_Command(0X38);
+    __delay_ms(10);
+    Lcd_Command(0X38);
+    __delay_ms(10);
+    Lcd_Command(0X38);
+    __delay_ms(10);
+    Lcd_Command(0X06);
+    __delay_ms(10);
+    Lcd_Command(0X0C);
+    __delay_ms(10);
+    Lcd_Command(0X01);
+    __delay_ms(10);
+}
+void Lcd_Data(unsigned char i)
+{
+    PORTC|=0X08;//RS=1
+    PORTD=i;//data to port
+    PORTC|=0X01;//E=1
+    PORTC&=~0X01;//E=0
+    __delay_ms(10);//delay
+}
+void Lcd_Command(unsigned char i)
+{
+    PORTC&=~0X08;//RS=0
+    PORTD=i;//data to port
+    PORTC|=0X01;//E=1
+    PORTC&=~0X01;//E=0
+    __delay_ms(10);//delay
+}
+

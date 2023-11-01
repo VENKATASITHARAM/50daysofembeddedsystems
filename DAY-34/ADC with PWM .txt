@@ -1,0 +1,149 @@
+//ADC with PWM 
+
+#pragma config FOSC = EXTRC     // Oscillator Selection bits (RC oscillator)
+#pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled)
+#pragma config PWRTE = OFF      // Power-up Timer Enable bit (PWRT disabled)
+#pragma config BOREN = OFF      // Brown-out Reset Enable bit (BOR disabled)
+#pragma config LVP = OFF        // Low-Voltage (Single-Supply) In-Circuit Serial Programming Enable bit (RB3 is digital I/O, HV on MCLR must be used for programming)
+#pragma config CPD = OFF        // Data EEPROM Memory Code Protection bit (Data EEPROM code protection off)
+#pragma config WRT = OFF        // Flash Program Memory Write Enable bits (Write protection off; all program memory may be written to by EECON control)
+#pragma config CP = OFF         // Flash Program Memory Code Protection bit (Code protection off)
+
+// #pragma config statements should precede project file includes.
+// Use project enums instead of #define for ON and OFF.
+
+#include <xc.h>
+#define _XTAL_FREQ 6000000
+
+void init(void);
+void Lcd_Command(unsigned char);
+void Lcd_Data(unsigned char);
+void Lcd_Output(unsigned int);
+
+unsigned int lovalue,highvalue,voltage,value;
+unsigned char n,j,k[10],dis[]="ADC VALUE: ";
+
+void main()
+{
+    init();
+    while(1)
+    {
+        ADCON0=0X81;
+        ADCON0|=0X04;//ADC CONVERSION START
+        while(ADCON0&0X04);//ADC CONVERSION STOP
+        //As ADC is of 10-BIT it's value won't fit in one register .. 
+        lovalue=ADRESL;
+        highvalue=ADRESH;
+        value=((unsigned int)highvalue<<8)+((unsigned int)lovalue);
+        voltage=value/3;//value*339/1023;    90%duty cycle
+        Lcd_Output(voltage);
+        
+        //PWM CONTROL REGISTERS
+        CCPR1L=voltage>>2; //this bit is 8-bit. so 10-bit ADC,8-bit MSB is stored in CCPR1L and 2bit in CCP1CON
+        CCP1CON= (CCP1CON&0X0C)+ (voltage&0X03<<4);//TO MOVE THE LSB 2-bits to CCP1CON(4,5 BITS).
+        __delay_ms(1000);
+    }
+}
+void Lcd_Output(unsigned i)
+{
+    unsigned char s,j=1;
+    unsigned int m=i;
+    
+    Lcd_Command(0x8B);
+    if(m==0)
+    {
+        Lcd_Data(0x20);
+        Lcd_Data(0x20);
+        Lcd_Data(0x20);
+        Lcd_Data(0x30);
+    }
+    else
+    {
+        while(m!=0)
+        {
+            s=m-(m/10)*10;
+            k[j]=s;
+            j++;
+            m=m/10;
+        }
+        k[j]='\0'; 
+        j=j-1;
+        
+            if(k[3]>0)
+            {
+               Lcd_Data(0x20);
+               n=0x30+k[3];
+               Lcd_Data(n);
+
+               n=0x30+k[2];
+               Lcd_Data(n);
+
+               n=0x30+k[1];
+               Lcd_Data(n);
+            }
+            else if(k[2]>0)
+           {  
+               Lcd_Data(0x20);
+               Lcd_Data(0x20);
+               n=0x30+k[2];
+               Lcd_Data(n);
+               n=0x30+k[1];
+               Lcd_Data(n);
+           }
+           else if(k[1]>0)
+           {
+                Lcd_Data(0x20);
+                Lcd_Data(0x20);
+                Lcd_Data(0x20);
+                n=0x30+k[1];
+                Lcd_Data(n);
+           }
+    }
+    n=0X56;
+    Lcd_Data(n);
+}
+void Lcd_Data(unsigned char x)
+{
+    PORTC|=0X08;//RS=1
+    PORTD=x;
+    PORTC|=0X01;//E=1
+    PORTC&=~0X01;//E=0
+     __delay_ms(100);
+}
+void Lcd_Command(unsigned char command)
+{
+    PORTC&=~0X08;//RS=0
+    PORTD=command;
+    PORTC|=0X01;//E=1
+    PORTC&=~0X01;//E=0
+     __delay_ms(100);
+}
+void init()
+{
+    TRISD=0X00;//output for lcd data
+    TRISC=0X00;//output for pwm&RS , E
+    TRISA=0X01;//input for potentiometer
+    ADCON0=0X00;
+    ADCON1=0X8E;//7-left/right 6-freq 5,4-X (3-0)-A/D Port Configuration Control bits 1000 1110
+    CCP1CON=0X3C;//7,6-X 5,4-LSB of PWM CYCLE (3-0)-11XX pwm mode
+    CCPR1L=0X00;//PWM 10bit data --> 8-bit MSB & 2bit lsb in CCP1CON
+    T2CON=0X06; //2-timer ON 1,0-PRE-SCALAR 16
+    PR2=0X5E;//0101 1110 PERIOD   PR2=Fosc/(4*Fpwm*TMR2 PRE-SCALAR)-->6MHz/(4*1KHz*16) = 93.5 ~= 94 = 0X5E
+    Lcd_Command(0x38);
+    __delay_ms(100);
+    Lcd_Command(0x38);
+    __delay_ms(100);
+    Lcd_Command(0x38);
+    __delay_ms(100);
+    Lcd_Command(0x06);
+    __delay_ms(100);
+    Lcd_Command(0x0C);
+    __delay_ms(100);
+    Lcd_Command(0x01);
+    __delay_ms(100);
+    
+    Lcd_Command(0X80);
+    for(int i=0;i<11;i++)
+        Lcd_Data(dis[i]);
+   
+}

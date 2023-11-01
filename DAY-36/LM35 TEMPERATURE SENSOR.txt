@@ -1,0 +1,126 @@
+//LM35 TEMPERATURE SENSOR
+
+// PIC16F877A Configuration Bit Settings
+
+// 'C' source line config statements
+
+// CONFIG
+#pragma config FOSC = EXTRC     // Oscillator Selection bits (RC oscillator)
+#pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled)
+#pragma config PWRTE = OFF      // Power-up Timer Enable bit (PWRT disabled)
+#pragma config BOREN = OFF      // Brown-out Reset Enable bit (BOR disabled)
+#pragma config LVP = OFF        // Low-Voltage (Single-Supply) In-Circuit Serial Programming Enable bit (RB3 is digital I/O, HV on MCLR must be used for programming)
+#pragma config CPD = OFF        // Data EEPROM Memory Code Protection bit (Data EEPROM code protection off)
+#pragma config WRT = OFF        // Flash Program Memory Write Enable bits (Write protection off; all program memory may be written to by EECON control)
+#pragma config CP = OFF         // Flash Program Memory Code Protection bit (Code protection off)
+
+// #pragma config statements should precede project file includes.
+// Use project enums instead of #define for ON and OFF.
+
+#include <xc.h>
+#define _XTAL_FREQ 6000000
+
+void init(void);
+void Lcd_Command(unsigned char);
+void Lcd_Data(unsigned char );
+void Lcd_Output(unsigned int);
+
+unsigned int lovalue,hivalue,m;
+unsigned int value,voltage,temp;
+unsigned char n,j,k[10];
+unsigned char c1,c2,c3,c4;
+unsigned char DOT ='.',cel[]=" `C";
+unsigned char String[]="Temperature ";
+
+
+void main()
+{
+    init();
+    while(1)
+    {
+        ADCON0=0X81;//1000 0001 CLOCK FREQ(7,6) & POWER UP ADC(0)
+        //345 bits 0 for AN0 select
+        ADCON0|=0X04;//ADC conversion in progress bit; Enabling by not effecting any other bits.
+        //after process complete.. the 3rd bit will be automatically cleard.
+        while(ADCON0&0X04);
+        //after OR operation with 0x04. the 3rd bit only high remainnig will be 0 . so after conversion end, the 3rd bit
+        //becomes 0.then AND operation becomes total value 0.
+        lovalue=ADRESL;
+        hivalue=ADRESH;
+        //ADRESL and ADRESH are two 8-bit registers.USED to store final result of ADC.
+        //the value is unsigned int and can able to store upto 16-bit data.
+        //so,the 8-bit of high is left moved to higher nibble of value and added to lower nibble the lovalue. 
+        value=((unsigned int)hivalue<<8)+(unsigned int )lovalue;
+        
+        voltage=value*4.88281;//converting temp to digital value
+        temp=voltage/10.0;
+        Lcd_Output(temp*100);
+    }
+}
+void Lcd_Output(unsigned int temp1)
+{
+    c1 = (temp1/1000)%10;
+    c2 = (temp1/100)%10;
+    c3 = (temp1/10)%10;
+    c4 = (temp1/1)%10;
+    
+    Lcd_Command(0xC5);
+        Lcd_Data(c1+'0');
+        Lcd_Data(c2+'0');
+        Lcd_Data(DOT);
+        Lcd_Data(c3+'0');
+        Lcd_Data(c4+'0');
+        //Lcd_Command(0xDF);
+        //n=0x43;
+        for(int i=0;i<3;i++)
+        Lcd_Data(cel[i]);   
+}
+void Lcd_Data(unsigned char i)
+{
+    PORTC|=0X08;//RS=1
+    PORTD=i;//data to port
+    PORTC|=0X01;//E=1
+    PORTC&=~0X01;//E=0
+    __delay_ms(100);//1sec delay
+}
+void Lcd_Command(unsigned char i)
+{
+    PORTC&=~0X08;//RS=0
+    PORTD=i;//data to port
+    PORTC|=0X01;//E=1
+    PORTC&=~0X01;//E=0
+    __delay_ms(100);//1sec delay
+}
+void init()
+{
+    TRISA=0X01;//connected pot to AN0
+    TRISC=0X00;//PORTC as o/p for RS&E
+    TRISD=0X00;//PORTD AS O/P FOR DATA PINS
+    ADCON0=0X00; //ADCON0=0X81;//1000 0001 CLOCK FREQ(7,6) & POWER UP ADC(0)
+    //345 bits 0 for AN0 select
+    ADCON1=0X8E;//1000 1110 7th bit=1 so, right justified. 6th bit for freq divison.
+    //Fosc/32 as 6th bit of ADCON1=0 AND 6&7TH Bits of ADCON0=10
+    //LSB is 1110 so,AN1 - AN7 are D and AN0=A.
+    //AS we considered an 10-bit ADC we need two 8-bit registers for storing . total in 16bit's we use only 10-bits 
+    //remaining 6bits unused are making 0 . may be from left or right decided by left/right justified.
+    Lcd_Command(0X38);
+    __delay_ms(10);
+    Lcd_Command(0X38);
+    __delay_ms(10);
+    Lcd_Command(0X38);
+    __delay_ms(10);
+    Lcd_Command(0X06);
+    __delay_ms(10);
+    Lcd_Command(0X0C);
+    __delay_ms(10);
+    Lcd_Command(0X01);
+    __delay_ms(10);
+    
+    Lcd_Command(0x82);
+    for(int i=0;i<12;i++)
+    {
+        Lcd_Data(String[i]);
+    }
+}
+
+
