@@ -1,0 +1,57 @@
+//ARUDINO_PIC_UARTS
+
+#include <SoftwareSerial.h>
+#define yellow 4
+#define red    5
+#define green  6
+#define blue   7
+void setup(){
+  Serial.begin(9600);
+  pinMode(yellow, OUTPUT);
+  pinMode(red   , OUTPUT);
+  pinMode(green , OUTPUT);
+  pinMode(blue  , OUTPUT);
+}
+void loop() {
+  while(Serial.available()>=0){
+    char receivedData=Serial.read();
+    delay(1000);
+    switch (receivedData) {
+      case 'A':
+        digitalWrite(yellow, HIGH);
+        digitalWrite(red   , LOW);
+        digitalWrite(green , LOW);
+        digitalWrite(blue  , LOW);
+        delay(1000);
+        break;
+      case 'B':
+        digitalWrite(yellow, LOW);
+        digitalWrite(red   , HIGH);
+        digitalWrite(green , LOW);
+        digitalWrite(blue  , LOW);
+        delay(1000);
+        break;
+      case 'C':
+        digitalWrite(yellow, LOW);
+        digitalWrite(red   , LOW);
+        digitalWrite(green , HIGH);
+        digitalWrite(blue  , LOW);
+        delay(1000);
+        break;
+      case 'D':
+        digitalWrite(yellow, LOW);
+        digitalWrite(red   , LOW);
+        digitalWrite(green , LOW);
+        digitalWrite(blue  , HIGH);
+        break;
+      default:
+        digitalWrite(yellow, LOW);
+        digitalWrite(red   , LOW);
+        digitalWrite(green , LOW);
+        digitalWrite(blue  , LOW);
+        break;
+    }
+  }
+}
+
+

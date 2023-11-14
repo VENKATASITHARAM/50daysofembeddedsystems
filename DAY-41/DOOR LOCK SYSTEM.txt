@@ -1,0 +1,234 @@
+//DOOR LOCK SYSTEM
+// CONFIG
+#pragma config FOSC = EXTRC     // Oscillator Selection bits (RC oscillator)
+#pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled)
+#pragma config PWRTE = OFF      // Power-up Timer Enable bit (PWRT disabled)
+#pragma config BOREN = OFF      // Brown-out Reset Enable bit (BOR disabled)
+#pragma config LVP = OFF        // Low-Voltage (Single-Supply) In-Circuit Serial Programming Enable bit (RB3/PGM pin has PGM function; low-voltage programming enabled)
+#pragma config CPD = OFF        // Data EEPROM Memory Code Protection bit (Data EEPROM code protection off)
+#pragma config WRT = OFF        // Flash Program Memory Write Enable bits (Write protection off; all program memory may be written to by EECON control)
+#pragma config CP = OFF         // Flash Program Memory Code Protection bit (Code protection off)
+
+#include <xc.h>
+#define _XTAL_FREQ 6000000
+
+#define rs RD2
+#define en RD3
+#define R1 RB0
+#define R2 RB1
+#define R3 RB2
+#define R4 RB3
+#define C1 RB4
+#define C2 RB5
+#define C3 RB6
+#define C4 RB7
+void lcd_init();
+void lcd_cmd(unsigned char a);
+void lcd_data(unsigned char b);
+void lcd_show(unsigned char *s);
+void door_close(void);
+void lcd_delay();
+unsigned char key();
+void keyinit();
+unsigned char keypad[4][4]={{'7','8','9','/'},{'4','5','6','*'},{'1','2','3','-'},{'C','0','=','+'}};
+unsigned char rowloc,colloc,pos,count;
+unsigned char pass[]="4567",new[5];
+
+void main()
+{
+    unsigned int i;
+    TRISD=0X00;          //port as output port
+    TRISC = 0x00;// Set PORTB 8-Pins To Be Output Pins
+    PORTC = 0x00;// Set All PORTB Pins To Be OFF (Initially) !
+    lcd_init();
+    keyinit();
+    unsigned char b;
+    while(1)
+    {
+        if(pos <= 1)
+        {
+            lcd_cmd(0x01);
+            lcd_cmd(0x80);      //pointing to lcd line1 position1.
+            lcd_show((unsigned char *)".Enter PASSWORD..");//it will display on lcd
+        }
+        lcd_cmd(0xC8);//pointing second line
+        for(i=0;i<4;i++)
+        {
+            b=key();
+            lcd_data(b);
+            new[i]=b;
+        }
+        for(i=0;i<4;i++)
+        {
+            if(pass[i]==new[i])
+            {
+                count++;
+            }
+        }
+        new[4]='\0';
+        if(count==4)
+        {
+            
+            lcd_cmd(0x01);
+            lcd_cmd(0x80);      //pointing to lcd line1 position1.
+            lcd_show((unsigned char *)"..DOOR OPENING...");//it will display on lcd
+            __delay_ms(1000);
+            PORTC=0X02;//motor 90degree //0000 0001 -->0000 0010
+            
+            door_close();
+            pos=0;
+            count=0;
+        }
+        else
+        {
+            lcd_cmd(0x01);
+            lcd_cmd(0x80);      //pointing to lcd line1 position1.
+            lcd_show((unsigned char *)"  WRONG PASSWORD   ");//it will display on lcd
+            __delay_ms(1000);
+            pos=pos+1;
+            if(pos==1)
+            {
+            lcd_cmd(0x01);
+            lcd_cmd(0x80); 
+            lcd_show((unsigned char *)"ONE MORE CHANCE");
+            lcd_cmd(0xC5); 
+            lcd_show((unsigned char *)" FOR YOU ");
+            __delay_ms(2000);
+            }
+            count=0;   
+        }
+        if(pos>1)//more than one chance
+        {
+            lcd_cmd(0x01);
+            lcd_cmd(0x80); 
+            lcd_show((unsigned char *)"SYSTEM BLOCKED");
+            lcd_cmd(0xC0);
+            lcd_show((unsigned char *)"***************");
+            while(1);
+        }
+    }
+}  
+void door_close()
+{
+    unsigned char i=6;
+    lcd_cmd(0x01);
+    lcd_cmd(0x80);
+    lcd_show((unsigned char *)"DOOR CLOSING IN: ");
+    while(i--)
+    {
+        lcd_cmd(0xCB);
+        lcd_data(0x30+i);
+        __delay_ms(1000);
+    }
+    lcd_cmd(0x01);
+    lcd_cmd(0x80);
+    PORTC=0X01; //motor 0degree
+    lcd_show((unsigned char *)"DOOR CLOSED");
+     __delay_ms(3000);
+}
+void lcd_init()
+{
+    lcd_cmd(0x02);//return home
+    lcd_cmd(0x28);//4bit mode
+    lcd_cmd(0x0e);//Display ON Cursor ON
+    lcd_cmd(0x06);//Increment Cursor
+    lcd_cmd(0x80);//force lcd to begin from line1
+}
+void lcd_cmd(unsigned char a)
+{
+    
+    rs=0; //register select LOW (COMMAND)
+    PORTD&=0x0F;//4-BIT data(LSB)
+    PORTD|=(a&0xf0);//PUTTING 4-BIT
+    en=1;//ENABLE HIGH
+    lcd_delay();
+    en=0;//ENABLE LOW
+    lcd_delay();
+    
+    PORTD&=0x0F;//4-BIT data(MSB)
+    PORTD|=(a<<4&0xF0);//PUTTING 4-BIT
+    en=1;//ENABLE HIGH
+    lcd_delay();
+    en=0;//ENABLE LOW
+    lcd_delay();
+}
+void lcd_data(unsigned char b)
+{
+    rs=1; //register select HIGH (DATA)
+    PORTD&=0x0F;//4-BIT data(LSB)
+    PORTD|=(b&0xf0);//PUTTING 4-BIT
+    en=1;//ENABLE HIGH
+    lcd_delay();
+    en=0;//ENABLE LOW
+    lcd_delay();
+    
+    PORTD&=0x0F;//4-BIT data(LSB)
+    PORTD|=(b<<4&0xf0);
+    en=1;
+    lcd_delay();
+    en=0;
+    lcd_delay();
+}
+void lcd_show(unsigned char *s)//displays string on lcd
+{
+    while(*s) {
+        lcd_data(*s++);
+    }
+}
+void lcd_delay()
+{
+    unsigned int lcd_delay;
+    for(lcd_delay=0;lcd_delay<=1000;lcd_delay++);
+}
+void keyinit()
+{
+    TRISB=0XF0;
+    OPTION_REG&=0X7F;           //ENABLE PULL UP
+}
+unsigned char key()
+{
+    PORTB=0X00;
+    while(C1&&C2&&C3&&C4);//when no switch press
+    while(!C1||!C2||!C3||!C4) //when any one switch pressed CHECKS FOR ROW
+    {
+        R1=0;
+        R2=R3=R4=1;
+        if(!C1||!C2||!C3||!C4)
+        {
+            rowloc=0;
+            break;
+        }
+        R2=0;R1=1;
+        if(!C1||!C2||!C3||!C4) 
+        {
+            rowloc=1;
+            break;
+        }
+        R3=0;R2=1;
+        if(!C1||!C2||!C3||!C4) 
+        {
+            rowloc=2;
+            break;
+        }
+        R4=0; R3=1;
+        if(!C1||!C2||!C3||!C4)
+        {
+            rowloc=3;
+            break;
+        }
+    }
+//COLUMN CHECK
+    if(C1==0&&C2!=0&&C3!=0&&C4!=0)
+            colloc=0;
+    else if(C1!=0&&C2==0&&C3!=0&&C4!=0)
+            colloc=1;
+    else if(C1!=0&&C2!=0&&C3==0&&C4!=0)
+            colloc=2;
+    else if(C1!=0&&C2!=0&&C3!=0&&C4==0)
+            colloc=3;
+    while(C1==0||C2==0||C3==0||C4==0);
+    return (keypad[rowloc][colloc]);
+//THEN RETURN THE ROW&COLUMN it matches with keypad array and gets the letter pressed on keypad.
+}
+
+
